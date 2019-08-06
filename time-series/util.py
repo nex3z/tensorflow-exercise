@@ -81,7 +81,7 @@ def validate_model(model, df_val, window_size):
     for i, (idx, row) in enumerate(df_forecast.iterrows()):
         if i < window_size:
             continue
-        y_val = df_forecast['y'].iloc[(i - 20):i].values
+        y_val = df_forecast['y'].iloc[(i - window_size):i].values
         forecast_value = model.predict(y_val[np.newaxis])
         df_forecast.loc[idx, 'y_hat'] = forecast_value[0, 0]
 
