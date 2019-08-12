@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import tensorflow as tf
 from tensorflow.data import Dataset
 
 
@@ -73,8 +74,8 @@ def validate(df_forecast):
     print("MSE: {}, MAE: {}".format(mse, mae))
     plot_df(df_forecast, columns=['y', 'y_hat'])
 
-
-def validate_model(model, df_val, window_size):
+    
+def validate_model2(model, df_val, window_size):
     df_forecast = df_val.copy()
     df_forecast['y_hat'] = np.nan
 
@@ -88,6 +89,18 @@ def validate_model(model, df_val, window_size):
     validate(df_forecast[window_size:])
 
 
+def validate_model(model, df_val, window_size, batch_size=512):
+    y_val = df_val['y'].values
+    dataset_val = Dataset.from_tensor_slices(y_val) \
+        .window(window_size, shift=1, drop_remainder=True) \
+        .flat_map(lambda window: window.batch(window_size)) \
+        .batch(batch_size).prefetch(1)
+    forecast = model.predict(dataset_val)
+    df_forecast = df_val[window_size:].copy()
+    df_forecast['y_hat'] = forecast[:-1]
+    validate(df_forecast)
+
+
 def plot_history(history, start_epoch=1, metrics=None):
     if metrics is None:
         metrics = ['loss']
@@ -97,3 +110,9 @@ def plot_history(history, start_epoch=1, metrics=None):
         plt.plot(epoch, metric_value, label=metric)
     plt.xlabel("Epoch")
     plt.legend()
+
+    
+def clear_env(seed=42):
+    tf.keras.backend.clear_session()
+    tf.random.set_seed(seed)
+    np.random.seed(seed)
